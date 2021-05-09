@@ -1,4 +1,5 @@
 [![License](https://img.shields.io/github/license/OliverCullimore/geo-energy-data-client?style=for-the-badge)](https://github.com/OliverCullimore/geo-energy-data-client)
+[![GoDoc](https://img.shields.io/static/v1?style=for-the-badge&label=go&message=reference&logoColor=white&color=007d9c)](https://godoercullimore/geo-energy-data-client)
 
 # geo Energy Data Client
 
