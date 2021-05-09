@@ -1,4 +1,4 @@
-package geo
+package geo_energy_data_client
 
 import (
 	"bytes"
