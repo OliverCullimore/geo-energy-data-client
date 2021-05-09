@@ -5,14 +5,14 @@
 Client for the geotogether.com API written in Go.
 
 ### Install
-```
+```sh
 go get github.com/olivercullimore/geo-energy-data-client
 ```
 
 ### Example
 main.go
 
-```
+```go
 package main
 
 import (
