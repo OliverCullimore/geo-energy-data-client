@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -58,7 +57,6 @@ func Login(user, pass string) (AuthData, error) {
 	var authData AuthData
 	err = json.Unmarshal(body, &authData)
 	if err != nil {
-		log.Fatal(err)
 		return AuthData{}, err
 	}
 
@@ -70,12 +68,11 @@ func GetAccessToken(user, pass string) (string, error) {
 	// Get an access token by logging in
 	authData, err := Login(user, pass)
 	if err != nil {
-		log.Println(err)
+		return "", err
 	}
 	//log.Println(authData)
-	accessToken := authData.AccessToken
 
-	return accessToken, err
+	return authData.AccessToken, nil
 }
 
 type DeviceDataSystemRoles struct {
@@ -124,7 +121,6 @@ func GetDeviceData(accessToken string) (DeviceData, error) {
 	var deviceData DeviceData
 	err = json.Unmarshal(body, &deviceData)
 	if err != nil {
-		log.Fatal(err)
 		return DeviceData{}, err
 	}
 
@@ -250,7 +246,6 @@ func GetPeriodicMeterData(accessToken, systemID string) (PeriodicMeterData, erro
 	var periodicMeterData PeriodicMeterData
 	err = json.Unmarshal(body, &periodicMeterData)
 	if err != nil {
-		log.Fatal(err)
 		return PeriodicMeterData{}, err
 	}
 
@@ -317,7 +312,6 @@ func GetLiveMeterData(accessToken, systemID string) (LiveMeterData, error) {
 	var liveMeterData LiveMeterData
 	err = json.Unmarshal(body, &liveMeterData)
 	if err != nil {
-		log.Fatal(err)
 		return LiveMeterData{}, err
 	}
 
