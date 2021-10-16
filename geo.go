@@ -3,6 +3,7 @@ package geo
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -48,14 +49,18 @@ func Login(user, pass string) (AuthData, error) {
 	}
 
 	// Make login request
-	body, err := makeRequest("/usersservice/v2/login", "POST", nil, requestHeaders, bytes.NewBuffer(requestBody))
-	if err != nil {
-		return AuthData{}, err
+	body, httpErr := makeRequest("/usersservice/v2/login", "POST", nil, requestHeaders, bytes.NewBuffer(requestBody))
+	if httpErr.Error != nil || (httpErr.Response.StatusCode != 200 && httpErr.Response.StatusCode != 0) {
+		errMsg := fmt.Sprintf("Response Code: %d", httpErr.Response.StatusCode)
+		if string(body) != "" {
+			errMsg = fmt.Sprintf("Response: %s Response Code: %d", body, httpErr.Response.StatusCode)
+		}
+		return AuthData{}, errors.New(errMsg)
 	}
-	//fmt.Println("Response: " + string(body))
+	//fmt.Printf("Response: %s %d", body, httpErr.Response.StatusCode)
 
 	var authData AuthData
-	err = json.Unmarshal(body, &authData)
+	err := json.Unmarshal(body, &authData)
 	if err != nil {
 		return AuthData{}, err
 	}
@@ -112,14 +117,18 @@ func GetDeviceData(accessToken string) (DeviceData, error) {
 	}
 
 	// Get data from geo API
-	body, err := makeRequest("/api/userapi/v2/user/detail-systems?systemDetails=true", "GET", nil, requestHeaders, nil)
-	if err != nil {
-		return DeviceData{}, err
+	body, httpErr := makeRequest("/api/userapi/v2/user/detail-systems?systemDetails=true", "GET", nil, requestHeaders, nil)
+	if httpErr.Error != nil || (httpErr.Response.StatusCode != 200 && httpErr.Response.StatusCode != 0) {
+		errMsg := fmt.Sprintf("Response Code: %d", httpErr.Response.StatusCode)
+		if string(body) != "" {
+			errMsg = fmt.Sprintf("Response: %s Response Code: %d", body, httpErr.Response.StatusCode)
+		}
+		return DeviceData{}, errors.New(errMsg)
 	}
-	//fmt.Println("Response: " + string(body))
+	//fmt.Printf("Response: %s %d", body, httpErr.Response.StatusCode)
 
 	var deviceData DeviceData
-	err = json.Unmarshal(body, &deviceData)
+	err := json.Unmarshal(body, &deviceData)
 	if err != nil {
 		return DeviceData{}, err
 	}
@@ -237,14 +246,18 @@ func GetPeriodicMeterData(accessToken, systemID string) (PeriodicMeterData, erro
 	}
 
 	// Get data from geo API
-	body, err := makeRequest(requestURL, "GET", nil, requestHeaders, nil)
-	if err != nil {
-		return PeriodicMeterData{}, err
+	body, httpErr := makeRequest(requestURL, "GET", nil, requestHeaders, nil)
+	if httpErr.Error != nil || (httpErr.Response.StatusCode != 200 && httpErr.Response.StatusCode != 0) {
+		errMsg := fmt.Sprintf("Response Code: %d", httpErr.Response.StatusCode)
+		if string(body) != "" {
+			errMsg = fmt.Sprintf("Response: %s Response Code: %d", body, httpErr.Response.StatusCode)
+		}
+		return PeriodicMeterData{}, errors.New(errMsg)
 	}
-	//fmt.Println("Response: " + string(body))
+	//fmt.Printf("Response: %s %d", body, httpErr.Response.StatusCode)
 
 	var periodicMeterData PeriodicMeterData
-	err = json.Unmarshal(body, &periodicMeterData)
+	err := json.Unmarshal(body, &periodicMeterData)
 	if err != nil {
 		return PeriodicMeterData{}, err
 	}
@@ -303,14 +316,18 @@ func GetLiveMeterData(accessToken, systemID string) (LiveMeterData, error) {
 	}
 
 	// Get data from geo API
-	body, err := makeRequest(requestURL, "GET", nil, requestHeaders, nil)
-	if err != nil {
-		return LiveMeterData{}, err
+	body, httpErr := makeRequest(requestURL, "GET", nil, requestHeaders, nil)
+	if httpErr.Error != nil || (httpErr.Response.StatusCode != 200 && httpErr.Response.StatusCode != 0) {
+		errMsg := fmt.Sprintf("Response Code: %d", httpErr.Response.StatusCode)
+		if string(body) != "" {
+			errMsg = fmt.Sprintf("Response: %s Response Code: %d", body, httpErr.Response.StatusCode)
+		}
+		return LiveMeterData{}, errors.New(errMsg)
 	}
-	//fmt.Println("Response: " + string(body))
+	//fmt.Printf("Response: %s %d", body, httpErr.Response.StatusCode)
 
 	var liveMeterData LiveMeterData
-	err = json.Unmarshal(body, &liveMeterData)
+	err := json.Unmarshal(body, &liveMeterData)
 	if err != nil {
 		return LiveMeterData{}, err
 	}
@@ -323,15 +340,20 @@ func ConvertToKWH(m3 float64, calorificValue float64) float64 {
 	return (((m3 / 1000) * calorificValue) * 1.02264) / 3.6
 }
 
+type HTTPError struct {
+	Response http.Response
+	Error    error
+}
+
 // makeRequest function
-func makeRequest(url string, method string, params map[string]string, headers map[string][]string, body io.Reader) ([]byte, error) {
+func makeRequest(url string, method string, params map[string]string, headers map[string][]string, body io.Reader) ([]byte, HTTPError) {
 	if method == "" {
 		method = "GET"
 	}
 
 	req, err := http.NewRequest(method, geoBaseURL+url, body)
 	if err != nil {
-		return nil, err
+		return nil, HTTPError{http.Response{}, err}
 	}
 
 	// Define the query
@@ -354,17 +376,17 @@ func makeRequest(url string, method string, params map[string]string, headers ma
 		}
 	}()
 	if err != nil {
-		return nil, err
+		return nil, HTTPError{*resp, err}
 	}
 
 	// Check response status
-	if resp.Status == "200 OK" {
+	if resp.StatusCode == 200 {
 		// Read response body
 		responseData, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return nil, err
+			return nil, HTTPError{*resp, err}
 		}
-		return responseData, nil
+		return responseData, HTTPError{http.Response{}, nil}
 	}
-	return nil, err
+	return nil, HTTPError{*resp, err}
 }
