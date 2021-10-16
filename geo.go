@@ -55,6 +55,9 @@ func Login(user, pass string) (AuthData, error) {
 		if string(body) != "" {
 			errMsg = fmt.Sprintf("Response: %s Response Code: %d", body, httpErr.Response.StatusCode)
 		}
+		if httpErr.Response.StatusCode == 401 {
+			errMsg = fmt.Sprintf("Unable to login. Please check your login details are correct")
+		}
 		return AuthData{}, errors.New(errMsg)
 	}
 	//fmt.Printf("Response: %s %d", body, httpErr.Response.StatusCode)
